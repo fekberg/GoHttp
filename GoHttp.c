@@ -1,8 +1,3 @@
-/** This works!
-** sendHTML("HTTP/1.1 200 OK", "text/html", "<html><head><title>Hej hopp!</title></head><body><h1>It's alive!</h1></body></html>");
-**/
-
-/** Includes **/
 #include <string.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -14,8 +9,6 @@
 #include <pthread.h>
 #include <wait.h>
 
-
-/** Socket depending variables **/
 #define BUFFER_SIZE 512
 #define MAX_FILE_SIZE 5*1024
 #define MAX_CONNECTIONS 3
@@ -24,22 +17,20 @@
 #define EXIT_SUCCESS 0
 #define EXIT_FAILURE 1
 
-int port;                               // Listen port
-int deamon = FALSE;                     // Run as deamon?
-char *wwwroot;							// Full address to server root directory
-char *conf_file;                        // Full address to configuration file
-char *log_file;                         // Full address to log file
+int port;
+int deamon = FALSE;
+char *wwwroot;
+char *conf_file;
+char *log_file;
 char *mime_file;
 
-FILE *filePointer = NULL;				// Pointer to file
+FILE *filePointer = NULL;
 
-struct sockaddr_in address;             // scokaddr for listening address
-struct sockaddr_storage connector;      // sockaddr for connecting address
-int current_socket;                     // The listening socket descriptor
-int connecting_socket;                  // The connecting socket descriptior
-socklen_t addr_size;                    // Address lenght
-
-struct stat buf;                        // Struct to check user rights
+struct sockaddr_in address;
+struct sockaddr_storage connector;
+int current_socket;
+int connecting_socket;
+socklen_t addr_size;
 
 static void daemonize(void)
 {
@@ -162,7 +153,6 @@ void sendHTML(char *statusCode, char *contentType, char *content, int size, int 
 
 void sendFile(FILE *fp, int file_size)
 {
-	char *file_buffer = malloc(MAX_FILE_SIZE);
 	int current_char = 0;
 
 	do{
