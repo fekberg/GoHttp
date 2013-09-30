@@ -1,5 +1,5 @@
 /** This works!
-** SendHTML("HTTP/1.1 200 OK", "text/html", "<html><head><title>Hej hopp!</title></head><body><h1>It's alive!</h1></body></html>");
+** sendHTML("HTTP/1.1 200 OK", "text/html", "<html><head><title>Hej hopp!</title></head><body><h1>It's alive!</h1></body></html>");
 **/
 
 /** Includes **/
@@ -31,7 +31,7 @@ char *conf_file;                        // Full address to configuration file
 char *log_file;                         // Full address to log file
 char *mime_file;
 
-FILE *pfile = NULL;                     // Pointer to file
+FILE *filePointer = NULL;				// Pointer to file
 
 struct sockaddr_in address;             // scokaddr for listening address
 struct sockaddr_storage connector;      // sockaddr for connecting address
@@ -40,11 +40,6 @@ int connecting_socket;                  // The connecting socket descriptior
 socklen_t addr_size;                    // Address lenght
 
 struct stat buf;                        // Struct to check user rights
-
-void Log(char *logtext)
-{
-	printf(logtext);
-}
 
 static void daemonize(void)
 {
@@ -86,51 +81,7 @@ static void daemonize(void)
 	// freopen( "/dev/null", "w", stderr);
 }
 
-void AddCLF(char *remotehost, char *rfc931, char *authuser, char *request, char *status, char *bytes)
-{
-	char *message = malloc((
-		strlen(remotehost) +
-		strlen(rfc931) +
-		strlen(authuser) +
-		strlen(request) +
-		strlen(status) +
-		strlen(bytes) +
-		26 + /* date */
-		5 + /* spaces */
-		sizeof(char)) * 2);
-
-	char *space = " ";
-
-	time_t rawtime;
-
-	time ( &rawtime );
-
-	strcpy(message, remotehost);
-
-	strcat(message, space);
-
-	strcat(message, rfc931);
-
-	strcat(message, space);
-
-	strcat(message, authuser);
-
-	strcat(message, space);
-
-	strcat(message, (char*)ctime(&rawtime));
-
-	strcat(message, space);
-
-	strcat(message, request);
-
-	strcat(message, space);
-
-	strcat(message, status);
-
-	Log(message);
-}
-
-Send(char *message, int socket)
+sendString(char *message, int socket)
 {
 	int length, bytes_sent;
 	length = strlen(message);
@@ -140,7 +91,7 @@ Send(char *message, int socket)
 	return bytes_sent;
 }
 
-int SendBinary(int *byte, int length)
+int sendBinary(int *byte, int length)
 {
 	int bytes_sent;
 
@@ -151,7 +102,7 @@ int SendBinary(int *byte, int length)
 
 	return 0;
 }
-void SendHeader(char *Status_code, char *Content_Type, int TotalSize, int socket)
+void sendHeader(char *Status_code, char *Content_Type, int TotalSize, int socket)
 {
 	char *head = "\r\nHTTP/1.1 ";
 	char *content_head = "\r\nContent-Type: ";
@@ -159,14 +110,14 @@ void SendHeader(char *Status_code, char *Content_Type, int TotalSize, int socket
 	char *length_head = "\r\nContent-Length: ";
 	char *date_head = "\r\nDate: ";
 	char *newline = "\r\n";
-	char Content_Length[100];
+	char contentLength[100];
 
 	time_t rawtime;
 
 	time ( &rawtime );
 
-	// int content_length = strlen(HTML);
-	sprintf(Content_Length, "%i", TotalSize);
+	// int contentLength = strlen(HTML);
+	sprintf(contentLength, "%i", TotalSize);
 
 	char *message = malloc((
 		strlen(head) +
@@ -177,7 +128,7 @@ void SendHeader(char *Status_code, char *Content_Type, int TotalSize, int socket
 		strlen(newline) +
 		strlen(Status_code) +
 		strlen(Content_Type) +
-		strlen(Content_Length) +
+		strlen(contentLength) +
 		28 +
 		sizeof(char)) * 2);
 
@@ -192,31 +143,31 @@ void SendHeader(char *Status_code, char *Content_Type, int TotalSize, int socket
 		strcat(message, Content_Type);
 		strcat(message, server_head);
 		strcat(message, length_head);
-		strcat(message, Content_Length);
+		strcat(message, contentLength);
 		strcat(message, date_head);
 		strcat(message, (char*)ctime(&rawtime));
 		strcat(message, newline);
 
-		Send(message, socket);
+		sendString(message, socket);
 
 		free(message);
 	}    
 }
 
-void SendHTML(char *Status_Code, char *Content_Type, char *HTML, int TotalSize, int socket)
+void sendHTML(char *statusCode, char *contentType, char *content, int size, int socket)
 {
-	SendHeader(Status_Code, Content_Type, TotalSize, socket);
-	Send(HTML, socket);
+	sendHeader(statusCode, contentType, size, socket);
+	sendString(content, socket);
 }
 
-void SendFile(FILE *fp, int file_size)
+void sendFile(FILE *fp, int file_size)
 {
 	char *file_buffer = malloc(MAX_FILE_SIZE);
 	int current_char = 0;
 
 	do{
 		current_char = fgetc(fp);
-		SendBinary(&current_char, sizeof(char));
+		sendBinary(&current_char, sizeof(char));
 	}
 	while(current_char != EOF);
 }
@@ -257,7 +208,7 @@ int scan(char *input, char *output, int start)
 
 
 
-int CheckMime(char *extension, char *mime_type)
+int checkMime(char *extension, char *mime_type)
 {
 	char *current_word = malloc(600);
 	char *word_holder = malloc(600);
@@ -308,7 +259,7 @@ int CheckMime(char *extension, char *mime_type)
 	return 0;
 }
 
-int GetHTTPVersion(char *input, char *output)
+int getHttpVersion(char *input, char *output)
 {
 	char *filename = malloc(100);
 	int start = scan(input, filename, 4);
@@ -373,7 +324,7 @@ int Content_Lenght(FILE *fp)
 	return filesize;
 }
 
-int ProcessGET(char *input)
+int handleHttpGET(char *input)
 {
 	// IF NOT EXISTS
 	// RETURN -1
@@ -381,96 +332,96 @@ int ProcessGET(char *input)
 	// RETURN 1
 
 	char *filename = (char*)malloc(200 * sizeof(char));
-	char *absolute_path = (char*)malloc(1000 * sizeof(char));
-	char *file_extension = (char*)malloc(10 * sizeof(char));
-	char *file_mime = (char*)malloc(200 * sizeof(char));
+	char *path = (char*)malloc(1000 * sizeof(char));
+	char *extension = (char*)malloc(10 * sizeof(char));
+	char *mime = (char*)malloc(200 * sizeof(char));
 	char httpVersion[20];
 
-	int Content_Length = 0;
-	int Mime_Support = 0;
-	int FileNameLenght = 0;
+	int contentLength = 0;
+	int mimeSupported = 0;
+	int fileNameLenght = 0;
 
 
-	memset(absolute_path, '\0', 1000);
+	memset(path, '\0', 1000);
 	memset(filename, '\0', 200);
-	memset(file_extension, '\0', 10);
-	memset(file_mime, '\0', 200);
+	memset(extension, '\0', 10);
+	memset(mime, '\0', 200);
 	memset(httpVersion, '\0', 20);
 
-	FileNameLenght = scan(input, filename, 5);
+	fileNameLenght = scan(input, filename, 5);
 
 
-	if ( FileNameLenght > 0 )
+	if ( fileNameLenght > 0 )
 	{
 
-		if ( GetHTTPVersion(input, httpVersion) != -1 )
+		if ( getHttpVersion(input, httpVersion) != -1 )
 		{
 			FILE *fp;
 
-			if ( GetExtension(filename, file_extension) == -1 )
+			if ( GetExtension(filename, extension) == -1 )
 			{
-				Log("File extension not existing");
+				printf("File extension not existing");
 
-				Send("400 Bad Request\n", connecting_socket);
+				sendString("400 Bad Request\n", connecting_socket);
 
 				free(filename);
-				free(file_mime);
-				free(absolute_path);
-				free(file_extension);
+				free(mime);
+				free(path);
+				free(extension);
 
 				return -1;
 			}
 
-			Mime_Support =  CheckMime(file_extension, file_mime);
+			mimeSupported =  checkMime(extension, mime);
 
 
-			if ( Mime_Support != 1)
+			if ( mimeSupported != 1)
 			{
-				Log("Mime not supported");
+				printf("Mime not supported");
 
-				Send("400 Bad Request\n", connecting_socket);
+				sendString("400 Bad Request\n", connecting_socket);
 
 				free(filename);
-				free(file_mime);
-				free(absolute_path);
-				free(file_extension);
+				free(mime);
+				free(path);
+				free(extension);
 
 				return -1;
 			}
 
 			// Open the requesting file as binary //
 
-			strcpy(absolute_path, wwwroot);
+			strcpy(path, wwwroot);
 
-			strcat(absolute_path, filename);			
+			strcat(path, filename);			
 
-			fp = fopen(absolute_path, "rb");
+			fp = fopen(path, "rb");
 
 			if ( fp == NULL )
 			{
-				Log("Unable to open file");
+				printf("Unable to open file");
 
-				Send("404 Not Found\n", connecting_socket);
+				sendString("404 Not Found\n", connecting_socket);
 
 				free(filename);
-				free(file_mime);
-				free(file_extension);
-				free(absolute_path);
+				free(mime);
+				free(extension);
+				free(path);
 
 				return -1;
 			}
 
 
 			// Calculate Content Length //
-			Content_Length = Content_Lenght(fp);
-			if (Content_Length  < 0 )
+			contentLength = Content_Lenght(fp);
+			if (contentLength  < 0 )
 			{
-				Log("File size is zero");
+				printf("File size is zero");
 
 				free(filename);
-				free(file_mime);
-				free(file_extension);
-				free(absolute_path);
+				free(mime);
+				free(extension);
+				free(path);
 
 				fclose(fp);
 
@@ -478,14 +429,14 @@ int ProcessGET(char *input)
 			}
 
 			// Send File Content //
-			SendHeader("200 OK", file_mime,Content_Length, connecting_socket);
+			sendHeader("200 OK", mime,contentLength, connecting_socket);
 
-			SendFile(fp, Content_Length);
+			sendFile(fp, contentLength);
 
 			free(filename);
-			free(file_mime);
-			free(file_extension);
-			free(absolute_path);
+			free(mime);
+			free(extension);
+			free(path);
 
 			fclose(fp);
 
@@ -493,14 +444,14 @@ int ProcessGET(char *input)
 		}
 		else
 		{
-			Send("501 Not Implemented\n", connecting_socket);
+			sendString("501 Not Implemented\n", connecting_socket);
 		}
 	}
 
 	return -1;
 }
 
-int ValidateRequest(char *input)
+int getRequestType(char *input)
 {
 	// IF NOT VALID REQUEST 
 	// RETURN -1
@@ -509,36 +460,37 @@ int ValidateRequest(char *input)
 	// RETURN 2 IF HEAD
 	// RETURN 0 IF NOT YET IMPLEMENTED
 
-	int Valid = -1;
+	int type = -1;
 
 	if ( strlen ( input ) > 0 )
-		Valid = 1;
-	else
-		Valid = -1;
-	// CHECK IF GET
+	{
+		type = 1;
+	}
 
 	char *requestType = malloc(5);
 
 	scan(input, requestType, 0);
 
-	if ( Valid == TRUE && strcmp("GET", requestType) == 0)
-		Valid = 1;
-
-	// CHECK IF HEAD
-	else if (Valid == TRUE && strcmp("HEAD", requestType) == 0)
-		Valid = 2;
-
+	if ( type == 1 && strcmp("GET", requestType) == 0)
+	{
+		type = 1;
+	}
+	else if (type == 1 && strcmp("HEAD", requestType) == 0)
+	{
+		type = 2;
+	}
 	else if (strlen(input) > 4 && strcmp("POST", requestType) == 0 )
 	{
-		Valid = 0;
+		type = 0;
 	}
 	else
-		Valid = -1;
-
-	return Valid;
+	{
+		type = -1;
+	}
+	return type;
 }
 
-int Receive(int socket)
+int receive(int socket)
 {
 	int msgLen = 0;
 	char buffer[BUFFER_SIZE];
@@ -547,36 +499,36 @@ int Receive(int socket)
 
 	if ((msgLen = recv(socket, buffer, BUFFER_SIZE, 0)) == -1)
 	{
-		Log("Error handling incoming request");
+		printf("Error handling incoming request");
 		return -1;
 	}
 
-	int Request = ValidateRequest(buffer);
+	int request = getRequestType(buffer);
 
-	if ( Request == 1 )				// GET
+	if ( request == 1 )				// GET
 	{
-		ProcessGET(buffer);
+		handleHttpGET(buffer);
 	}
-	else if ( Request == 2 )		// HEAD
+	else if ( request == 2 )		// HEAD
 	{
 		// SendHeader();
 	}
-	else if ( Request == 0 )		// POST
+	else if ( request == 0 )		// POST
 	{
-		Send("501 Not Implemented\n", connecting_socket);
+		sendString("501 Not Implemented\n", connecting_socket);
 	}
 	else							// GARBAGE
 	{
-		Send("400 Bad Request\n", connecting_socket);
+		sendString("400 Bad Request\n", connecting_socket);
 	}
 
 	return 1;
 }
 
 /**
-Create a socket and assign current_socket to the descriptor
+	Create a socket and assign current_socket to the descriptor
 **/
-void CreateSocket()
+void createSocket()
 {
 	current_socket = socket(AF_INET, SOCK_STREAM, 0);
 
@@ -588,9 +540,9 @@ void CreateSocket()
 }
 
 /**
-Bind to the current_socket descriptor and listen to the port in PORT
+	Bind to the current_socket descriptor and listen to the port in PORT
 **/
-void BindSocket()
+void bindSocket()
 {
 	address.sin_family = AF_INET;
 	address.sin_addr.s_addr = INADDR_ANY;
@@ -604,9 +556,9 @@ void BindSocket()
 }
 
 /**
-Start listening for connections and accept no more than MAX_CONNECTIONS in the Quee
+	Start listening for connections and accept no more than MAX_CONNECTIONS in the Quee
 **/
-void ListenOnSocket()
+void startListener()
 {
 	if ( listen(current_socket, MAX_CONNECTIONS) < 0 )
 	{
@@ -616,14 +568,9 @@ void ListenOnSocket()
 }
 
 /**
-Accept a connection that connects to the socket
-**/
-
-
-/**
 Handles the current connector
 **/
-void HandleCurrentConnection(int socket)
+void handle(int socket)
 {
 	// --- Workflow --- //
 	// 1. Receive ( recv() ) the GET / HEAD
@@ -631,21 +578,14 @@ void HandleCurrentConnection(int socket)
 	// 3. Read the file content
 	// 4. Send out with correct mine and http 1.1
 
-	if (Receive((int)socket) < 0)
+	if (receive((int)socket) < 0)
 	{
 		perror("Receive");
 		exit(-1);
 	}
 }
 
-/**
-Dispose the current connector
-**/
-void DisposeCurrentConnection()
-{
-	close(connecting_socket);
-}
-void ProcessConnections()
+void acceptConnection()
 {
 	// signal(SIGCHLD, SIG_IGN);
 
@@ -662,10 +602,9 @@ void ProcessConnections()
 		exit(-1);
 	}
 
-	HandleCurrentConnection(connecting_socket);
+	handle(connecting_socket);
 
-
-	DisposeCurrentConnection();
+	close(connecting_socket);
 	/*
 	if ( child_process == 0 )
 	{
@@ -677,40 +616,29 @@ void ProcessConnections()
 	*/		// while (-1 != waitpid (-1, NULL, WNOHANG));
 
 }
-/**
-Starting the actual webserver
-**/
-void BeginListen()
+
+void start()
 {
-	CreateSocket();
+	createSocket();
 
-	BindSocket();
+	bindSocket();
 
-	ListenOnSocket();
+	startListener();
 
 	while ( 1 )
 	{
-		ProcessConnections();
+		acceptConnection();
 	}
 }
 
-void Prepare()
+void initConfiguration()
 {
-	Log("Loading Configuration...\n");
+
 }
 
-int main(int argc, char* argv[])
+void init()
 {
-
-
-	// Init variables
-	int i;
-	char* curLine = malloc(100);
-	char* fileExt = malloc(10);
-
-	// * temp * //
-	char* mime_type = malloc(800);
-
+	char* currentLine = malloc(100);
 	wwwroot = malloc(100);
 	conf_file = malloc(100);
 	log_file = malloc(100);
@@ -723,55 +651,66 @@ int main(int argc, char* argv[])
 
 	// Set deamon to FALSE
 	deamon = FALSE;
+		
+	filePointer = fopen(conf_file, "r");
 
-	pfile = fopen(conf_file, "r");
-
-	if (pfile == NULL)
+	// Ensure that the configuration file is open
+	if (filePointer == NULL)
 	{
 		fprintf(stderr, "Can't open configuration file!\n");
 		exit(1);
 	}
 
 	// Get server root directory from configuration file
-	if (fscanf(pfile, "%s %s", curLine, wwwroot) != 2)
+	if (fscanf(filePointer, "%s %s", currentLine, wwwroot) != 2)
 	{
 		fprintf(stderr, "Error in configuration file on line 1!\n");
 		exit(1);
 	}
 
 	// Get default port from configuration file
-	if (fscanf(pfile, "%s %i", curLine, &port) != 2)
+	if (fscanf(filePointer, "%s %i", currentLine, &port) != 2)
 	{
 		fprintf(stderr, "Error in configuration file on line 2!\n");
 		exit(1);
 	}
-	fclose(pfile);
 
-	free(curLine);
+	fclose(filePointer);
+	free(currentLine);
+}
 
-	// Loop through all arguments
-	for (i = 1; i < argc; i++)
+int main(int argc, char* argv[])
+{
+	int parameterCount;
+	char* fileExt = malloc(10);
+	char* mime_type = malloc(800);
+
+	init();
+
+	for (parameterCount = 1; parameterCount < argc; parameterCount++)
 	{
 		// If flag -p is used, set port
-		if (strcmp(argv[i], "-p") == 0)
+		if (strcmp(argv[parameterCount], "-p") == 0)
 		{
-			i++;
-			printf("Setting port to %i\n", atoi(argv[i]));
-			port = atoi(argv[i]);
+			// Indicate that we want to jump over the next parameter
+			parameterCount++;
+			printf("Setting port to %i\n", atoi(argv[parameterCount]));
+			port = atoi(argv[parameterCount]);
 		}
 
 		// If flag -d is used, set deamon to TRUE;
-		else if (strcmp(argv[i], "-d") == 0)
-		{
+		else if (strcmp(argv[parameterCount], "-d") == 0)
+		{ 
 			printf("Setting deamon = TRUE");
 			deamon = TRUE;
 		}
 
-		else if (strcmp(argv[i], "-l") == 0)
+		else if (strcmp(argv[parameterCount], "-l") == 0)
 		{
-			i++;
-			printf("Setting logfile = %s\n", argv[i]);
-			log_file = (char*)argv[i];
+			// Indicate that we want to jump over the next parameter
+			parameterCount++;
+			printf("Setting logfile = %s\n", argv[parameterCount]);
+			log_file = (char*)argv[parameterCount];
 		}
 		else
 		{
@@ -795,21 +734,7 @@ int main(int argc, char* argv[])
 		daemonize();
 	}
 
-
-	if ( CheckMime("htm", mime_type) > 0 )
-		printf("Mime type: %s\r\n", mime_type);
-
-	if ( CheckMime("ico", mime_type) > 0 )
-
-		printf("Mime type: %s\r\n", mime_type);
-	if ( CheckMime("jpg", mime_type) > 0 )
-		printf("Mime type: %s\r\n", mime_type);
-
-
-	Prepare();
-
-	BeginListen();
+	start();
 
 	return 0;
-
 }
