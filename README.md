@@ -21,9 +21,9 @@ Sure! If you want to send a pull request please do! Keep in mind though that thi
 ##Command line arguments
 You can start the web server with the following command line arguments:
 
--p port number
--d run as daemon
--l log file
+	-p port number
+	-d run as daemon
+	-l log file
 
 ##What about configuration?
 You can open httpd.conf and change the following:
