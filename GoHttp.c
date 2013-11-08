@@ -7,7 +7,7 @@
 #include <sys/stat.h>
 #include <sys/types.h>
 #include <pthread.h>
-#include <wait.h>
+#include <sys/wait.h>
 
 #define BUFFER_SIZE 512
 #define MAX_FILE_SIZE 5*1024
