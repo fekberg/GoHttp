@@ -325,7 +325,7 @@ int handleHttpGET(char *input)
 	char *path = (char*)malloc(1000 * sizeof(char));
 	char *extension = (char*)malloc(10 * sizeof(char));
 	char *mime = (char*)malloc(200 * sizeof(char));
-	char httpVersion[20];
+	char *httpVersion = (char*)malloc(20 * sizeof(char));
 
 	int contentLength = 0;
 	int mimeSupported = 0;
