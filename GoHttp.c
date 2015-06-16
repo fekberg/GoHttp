@@ -276,18 +276,23 @@ int getHttpVersion(char *input, char *output)
 	return -1;
 }
 
-int GetExtension(char *input, char *output)
+int GetExtension(char *input, char *output, int max)
 {
 	int in_position = 0;
 	int appended_position = 0;
 	int i = 0;
+	int count = 0;
 
 	for ( ; i < strlen(input); i ++ )
 	{		
 		if ( in_position == 1 )
 		{
-			output[appended_position] = input[i];
-			appended_position +=1;
+			if(count < max)
+			{
+				output[appended_position] = input[i];
+				appended_position +=1;
+				count++;
+			}
 		}
 
 		if ( input[i] == '.' )
@@ -348,7 +353,7 @@ int handleHttpGET(char *input)
 		{
 			FILE *fp;
 
-			if ( GetExtension(filename, extension) == -1 )
+			if ( GetExtension(filename, extension, 10) == -1 )
 			{
 				printf("File extension not existing");
 
