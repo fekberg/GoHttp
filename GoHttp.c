@@ -162,21 +162,26 @@ void sendFile(FILE *fp, int file_size)
 	while(current_char != EOF);
 }
 
-int scan(char *input, char *output, int start)
+int scan(char *input, char *output, int start, int max)
 {
 	if ( start >= strlen(input) )
 		return -1;
 
 	int appending_char_count = 0;
 	int i = start;
+	int count = 0;
 
 	for ( ; i < strlen(input); i ++ )
 	{
 		if ( *(input + i) != '\t' && *(input + i) != ' ' && *(input + i) != '\n' && *(input + i) != '\r')
 		{
-			*(output + appending_char_count) = *(input + i ) ;
+			if (count < (max-1))
+			{
+				*(output + appending_char_count) = *(input + i ) ;
+				appending_char_count += 1;
 
-			appending_char_count += 1;
+				count++;
+			}		
 		}	
 		else
 			break;
@@ -217,10 +222,10 @@ int checkMime(char *extension, char *mime_type)
 
 		if ( line[0] != '#' )
 		{
-			startline = scan(line, current_word, 0);
+			startline = scan(line, current_word, 0, 600);
 			while ( 1 )
 			{
-				startline = scan(line, word_holder, startline);
+				startline = scan(line, word_holder, startline, 600);
 				if ( startline != -1 )
 				{
 					if ( strcmp ( word_holder, extension ) == 0 )
@@ -252,10 +257,10 @@ int checkMime(char *extension, char *mime_type)
 int getHttpVersion(char *input, char *output)
 {
 	char *filename = malloc(100);
-	int start = scan(input, filename, 4);
+	int start = scan(input, filename, 4, 100);
 	if ( start > 0 )
 	{
-		if ( scan(input, output, start) )
+		if ( scan(input, output, start, 20) )
 		{
 
 			output[strlen(output)+1] = '\0';
@@ -343,7 +348,7 @@ int handleHttpGET(char *input)
 	memset(mime, '\0', 200);
 	memset(httpVersion, '\0', 20);
 
-	fileNameLenght = scan(input, filename, 5);
+	fileNameLenght = scan(input, filename, 5, 200);
 
 
 	if ( fileNameLenght > 0 )
@@ -464,7 +469,7 @@ int getRequestType(char *input)
 
 	char *requestType = malloc(5);
 
-	scan(input, requestType, 0);
+	scan(input, requestType, 0, 5);
 
 	if ( type == 1 && strcmp("GET", requestType) == 0)
 	{
