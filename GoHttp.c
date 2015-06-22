@@ -1,3 +1,8 @@
+//
+// GoHttp is purely written for educational purposes
+// DO NOT USE IN PRODUCTION!
+//
+
 #include <string.h>
 #include <stdio.h>
 #include <stdlib.h>
