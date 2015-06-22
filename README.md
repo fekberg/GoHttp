@@ -2,6 +2,8 @@ GoHttp
 ======
 GoHttp is a simple web server written in C for educational purposes. This web server runs on GNU/Linux.
 
+*NOT FOR PRODUCTION USE!*
+
 ##What is implemented?
 This web server is far from complete and the purpose of it is to be very light weight to give an idea of where to start when wanting to understand web servers and C.
 
