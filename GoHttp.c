@@ -14,6 +14,10 @@
 #include <pthread.h>
 #include <sys/wait.h>
 
+#include "daemonize.h"
+#include "create_socket.h"
+#include "bind_socket.h"
+
 #define BUFFER_SIZE 512
 #define MAX_FILE_SIZE 5*1024
 #define MAX_CONNECTIONS 3
@@ -36,46 +40,6 @@ struct sockaddr_storage connector;
 int current_socket;
 int connecting_socket;
 socklen_t addr_size;
-
-static void daemonize(void)
-{
-	pid_t pid, sid;
-
-	/* already a daemon */
-	if ( getppid() == 1 ) return;
-
-	/* Fork off the parent process */
-	pid = fork();
-	if (pid < 0) {
-		exit(EXIT_FAILURE);
-	}
-	/* If we got a good PID, then we can exit the parent process. */
-	if (pid > 0) {
-		exit(EXIT_SUCCESS);
-	}
-
-	/* At this point we are executing as the child process */
-
-	/* Change the file mode mask */
-	umask(0);
-
-	/* Create a new SID for the child process */
-	sid = setsid();
-	if (sid < 0) {
-		exit(EXIT_FAILURE);
-	}
-
-	/* Change the current working directory.  This prevents the current
-	directory from being locked; hence not being able to remove it. */
-	if ((chdir("/")) < 0) {
-		exit(EXIT_FAILURE);
-	}
-
-	/* Redirect standard files to /dev/null */
-	// freopen( "/dev/null", "r", stdin);
-	// freopen( "/dev/null", "w", stdout);
-	// freopen( "/dev/null", "w", stderr);
-}
 
 sendString(char *message, int socket)
 {
@@ -530,35 +494,6 @@ int receive(int socket)
 	return 1;
 }
 
-/**
-	Create a socket and assign current_socket to the descriptor
-**/
-void createSocket()
-{
-	current_socket = socket(AF_INET, SOCK_STREAM, 0);
-
-	if ( current_socket == -1 )
-	{
-		perror("Create socket");
-		exit(-1);
-	}
-}
-
-/**
-	Bind to the current_socket descriptor and listen to the port in PORT
-**/
-void bindSocket()
-{
-	address.sin_family = AF_INET;
-	address.sin_addr.s_addr = INADDR_ANY;
-	address.sin_port = htons(port);
-
-	if ( bind(current_socket, (struct sockaddr *)&address, sizeof(address)) < 0 )
-	{
-		perror("Bind to port");
-		exit(-1);
-	}
-}
 
 /**
 	Start listening for connections and accept no more than MAX_CONNECTIONS in the Quee
@@ -624,9 +559,9 @@ void acceptConnection()
 
 void start()
 {
-	createSocket();
+	create_socket(&current_socket);
 
-	bindSocket();
+	bind_socket(&address, current_socket, port);
 
 	startListener();
 
@@ -634,11 +569,6 @@ void start()
 	{
 		acceptConnection();
 	}
-}
-
-void initConfiguration()
-{
-
 }
 
 void init()
