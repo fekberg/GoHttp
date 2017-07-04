@@ -1,3 +1,6 @@
+#include <stdlib.h>
+#include <stdio.h>
+
 #include "create_socket.h"
 
 void create_socket(int *current_socket)
