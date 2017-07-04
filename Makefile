@@ -1,7 +1,7 @@
-SOURCES=$(wildcard *.c)
-	
-all: clean	
-	gcc -std=c99 -Wall $(SOURCES) -o main	
+export BUILDDIR=$(CURDIR)
 
-clean: 
-	rm -f ./main
+all:
+	$(MAKE) -C src
+
+check:
+	$(MAKE) -C tests

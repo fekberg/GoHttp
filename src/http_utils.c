@@ -128,9 +128,9 @@ void init(int run_daemon, int *port, char **conf_file, char **log_file)
     mime_file = malloc(600);
 
     // Setting default values
-    *conf_file = "httpd.conf";
+    *conf_file = "config/httpd.conf";
     *log_file = ".log";
-    strcpy(mime_file, "mime.types");
+    strcpy(mime_file, "config/mime.types");
 
     // Set run_daemon to FALSE
     run_daemon = FALSE;
