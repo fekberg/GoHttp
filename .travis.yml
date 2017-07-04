@@ -1,0 +1,10 @@
+sudo: required
+
+services:
+  - docker
+
+before_install:
+  - docker build -t lib-check .
+
+script:
+  - docker run -P -v $PWD:/code -w="/code" lib-check /bin/sh -c "export CK_FORK=no && make check && ./tests/test_suite"
