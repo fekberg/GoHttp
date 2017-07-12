@@ -596,20 +596,31 @@ void acceptConnection()
 
 	// int child_process = fork();
 
+    int pid;
+
 	addr_size = sizeof(connector);
 
 	connecting_socket = accept(current_socket, (struct sockaddr *)&connector, &addr_size);
 
+    if ((pid = fork()) == -1)
+    {
+        close(connecting_socket);
+    }
 
-	if ( connecting_socket < 0 )
-	{
-		perror("Accepting sockets");
-		exit(-1);
-	}
+    else if(pid == 0)
+    {
+	    if ( connecting_socket < 0 )
+	    {
+		    perror("Accepting sockets");
+		    exit(-1);
+	    }
 
-	handle(connecting_socket);
+	    handle(connecting_socket);
 
-	close(connecting_socket);
+	    close(connecting_socket);
+
+        exit(0);
+    }
 	/*
 	if ( child_process == 0 )
 	{
