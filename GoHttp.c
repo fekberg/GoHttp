@@ -13,6 +13,8 @@
 #include <sys/types.h>
 #include <pthread.h>
 #include <sys/wait.h>
+#include <signal.h>
+#include <errno.h>
 
 #define BUFFER_SIZE 512
 #define MAX_FILE_SIZE 5*1024
@@ -31,11 +33,30 @@ char *mime_file;
 
 FILE *filePointer = NULL;
 
+struct sigaction sa; 
 struct sockaddr_in address;
 struct sockaddr_storage connector;
 int current_socket;
 int connecting_socket;
 socklen_t addr_size;
+
+static void sigchld_handler(int s)
+{
+    int saved_errno = errno;
+    while(waitpid(-1, NULL, WNOHANG) > 0);
+    errno = saved_errno;
+}
+
+static void setup_sigchld_handler()
+{
+    sa.sa_handler = sigchld_handler; // reap all dead processes
+    sigemptyset(&sa.sa_mask);
+    sa.sa_flags = SA_RESTART;
+    if (sigaction(SIGCHLD, &sa, NULL) == -1) {
+        perror("sigaction");
+        exit(1);
+    }
+}
 
 static void daemonize(void)
 {
@@ -640,6 +661,9 @@ void start()
 	bindSocket();
 
 	startListener();
+	
+	// reap zombie processes
+    	setup_sigchld_handler();
 
 	while ( 1 )
 	{
