@@ -202,7 +202,7 @@ int scan(char *input, char *output, int start, int max)
 			break;
 	}
 
-	return i;
+	return i - start;
 }
 
 
