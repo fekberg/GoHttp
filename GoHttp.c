@@ -202,11 +202,8 @@ int scan(char *input, char *output, int start, int max)
 			break;
 	}
 
-	return i - start;
+	return strlen(output);
 }
-
-
-
 
 int checkMime(char *extension, char *mime_type)
 {
